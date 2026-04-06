@@ -131,7 +131,7 @@ async def scrape_list(context):
     await page.route("**/*", lambda r: asyncio.create_task(route_list(r)))
 
     logger.info("抓列表页（只拦图片）")
-    await page.goto(TARGET_URL, wait_until="domcontentloaded", timeout=30_000)
+    await page.goto(TARGET_URL, wait_until="commit", timeout=90_000)
 
     await page.wait_for_selector(f'xpath={LIST_XPATH}')
 
@@ -176,7 +176,7 @@ async def scrape_detail(context, items, concurrency=3):
             await page.route("**/*", lambda r: asyncio.create_task(route_detail(r)))
 
             try:
-                await page.goto(item["href"], wait_until="domcontentloaded", timeout=30_000) # domcontentloaded很慢
+                await page.goto(item["href"], wait_until="commit", timeout=90_000) # domcontentloaded很慢
 
                 info = await page.query_selector('xpath=//*[@id="right"]/div[1]')
                 if info:
