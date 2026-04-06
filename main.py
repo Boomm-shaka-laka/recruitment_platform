@@ -12,6 +12,9 @@ st.set_page_config(
 # ─── Session State ─────────────────────────────────────────────────────────────
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "宁波国企"
+
+if "latest_post_results" not in st.session_state:
+    st.session_state.latest_post_results = []
  
 ALL_TABS = ["宁波国企", "金融国企", "科技国企", "能源国企", "政策资讯"]
 TAB_ICONS = {
@@ -810,4 +813,15 @@ def render_posts(tab_name: str):
 #     with tab:
 #         render_posts(name)
 render_posts(active_tab)
+from interface import crawler_to_db
+if st.button('按钮文字'):
+    # 当用户点击按钮时执行的代码
+    st.session_state.latest_post_results = crawler_to_db()
+    st.text_area(
+        label="处理结果",
+        value=st.session_state.latest_post_results,
+        height=200,
+        disabled=True,  # 设置为只读（用户不能编辑）
+        key="results_textarea"
+    )
     
