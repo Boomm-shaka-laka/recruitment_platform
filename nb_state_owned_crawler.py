@@ -131,7 +131,7 @@ async def scrape_list(context):
     await page.route("**/*", lambda r: asyncio.create_task(route_list(r)))
 
     logger.info("抓列表页（只拦图片）")
-    await page.goto(TARGET_URL, wait_until="commit", timeout=10_000)
+    await page.goto(TARGET_URL, wait_until="domcontentloaded", timeout=30_000)
 
     await page.wait_for_selector(f'xpath={LIST_XPATH}')
 
@@ -176,7 +176,7 @@ async def scrape_detail(context, items, concurrency=3):
             await page.route("**/*", lambda r: asyncio.create_task(route_detail(r)))
 
             try:
-                await page.goto(item["href"], wait_until="commit", timeout=10_000) # domcontentloaded很慢
+                await page.goto(item["href"], wait_until="domcontentloaded", timeout=30_000) # domcontentloaded很慢
 
                 info = await page.query_selector('xpath=//*[@id="right"]/div[1]')
                 if info:
@@ -221,10 +221,11 @@ async def run():
     install_playwright_browsers()
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+        context = await browser.new_context(
+            locale="zh-CN",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
 
-        context = await browser.new_context(locale="zh-CN")
-
-        # ❌ 不再使用 context.route
 
         items = await scrape_list(context)
         items = await scrape_detail(context, items, concurrency=3)
