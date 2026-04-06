@@ -1,6 +1,8 @@
 import asyncio
 import re
 import logging
+import subprocess
+import os
 from playwright.async_api import async_playwright
 
 import os
@@ -204,13 +206,21 @@ async def scrape_detail(context, items, concurrency=3):
     await asyncio.gather(*(worker(i) for i in items))
     return items
 
+def install_playwright_browsers():
+    # 检查是否已经在 Streamlit Cloud 环境中安装过
+    try:
+        # 尝试运行 chromium 以检查是否存在
+        subprocess.run(["playwright", "install", "chromium"], check=True)
+    except Exception as e:
+        print(f"Playwright installation failed: {e}")
 
 # ─────────────────────────────────────────────
 # 🚀 主程序
 # ─────────────────────────────────────────────
 async def run():
+    install_playwright_browsers()
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
 
         context = await browser.new_context(locale="zh-CN")
 
