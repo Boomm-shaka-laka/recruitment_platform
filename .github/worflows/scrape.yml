@@ -22,6 +22,7 @@ jobs:
       - name: 3. 安装依赖
         run: |
           pip install -r requirements.txt
+          
           playwright install chromium --with-deps
 
       - name: 4. 执行爬虫并更新数据库
