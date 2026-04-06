@@ -1,10 +1,14 @@
-import nb_state_owned_crawler
+from bs4_cralwer import fetch_notice_list, fetch_notice_detail
 from db.sqlite_db import RecruitmentDB
-import asyncio
 
 sqlite_db = RecruitmentDB("recruitment.db")
 def crawler_to_db():
-    results = asyncio.run(nb_state_owned_crawler.run())
+    notice_list = fetch_notice_list()
+    results = []
+    for notice in notice_list:
+        result = fetch_notice_detail(notice['url'])
+        print(result)
+        results.append(result)
     sqlite_db.insert_many(results)
     return results
 
