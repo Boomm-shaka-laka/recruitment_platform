@@ -1,21 +1,10 @@
 import asyncio
 import re
 import logging
-import subprocess
-import os
 from playwright.async_api import async_playwright
-import os
-PW_PATH = os.path.join(os.getcwd(), "pw-browsers")
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PW_PATH
 
-def ensure_playwright_installed():
-    """强制在指定路径安装浏览器"""
-    if not os.path.exists(PW_PATH):
-        try:
-            # 安装 chromium 及其所有系统依赖（--with-deps 是最后的保险）
-            subprocess.run(["playwright", "install", "chromium"], check=True)
-        except Exception as e:
-            print(f"安装浏览器失败: {e}")
+
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -220,8 +209,6 @@ async def scrape_detail(context, items, concurrency=3):
 # 🚀 主程序
 # ─────────────────────────────────────────────
 async def run():
-    # 每次运行前确保浏览器在指定位置
-    ensure_playwright_installed()
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
         context = await browser.new_context(

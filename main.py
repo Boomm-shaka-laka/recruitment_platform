@@ -2,11 +2,9 @@ import streamlit as st
 
 import interface
 import os
-import subprocess
 
-# 只有在 Streamlit Cloud 环境下才运行安装
-if not os.path.exists("/home/adminuser/.cache/ms-playwright"):
-    subprocess.run(["sh", "setup.sh"])
+import os
+os.system("playwright install")
 
 st.set_page_config(
     page_title="甬才智聘 · State-owned Intelligence Recruitment",
