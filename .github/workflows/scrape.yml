@@ -1,0 +1,36 @@
+name: Recruitment Scraper  # 自动化任务的名字
+
+on:
+  schedule:
+    # 定时任务：每天北京时间 9:00 和 18:00 执行 (对应 UTC 1:00 和 10:00)
+    - cron: '0 1,10 * * *'
+  workflow_dispatch: # 允许你手动在 GitHub 页面点按钮运行
+
+jobs:
+  build_and_run:
+    runs-on: ubuntu-latest # 使用标准的 Ubuntu 环境，Playwright 运行最稳
+
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 2. 安装 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: 3. 安装依赖
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: 4. 执行爬虫并更新数据库
+        run: python sync_data.py
+
+      - name: 5. 将更新后的数据库推回仓库
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add recruitment.db
+          git commit -m "Auto-update recruitment data [skip ci]" || echo "No changes to commit"
+          git push
