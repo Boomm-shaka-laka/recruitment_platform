@@ -4,9 +4,18 @@ import logging
 import subprocess
 import os
 from playwright.async_api import async_playwright
-
 import os
-os.system("playwright install")
+PW_PATH = os.path.join(os.getcwd(), "pw-browsers")
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PW_PATH
+
+def ensure_playwright_installed():
+    """强制在指定路径安装浏览器"""
+    if not os.path.exists(PW_PATH):
+        try:
+            # 安装 chromium 及其所有系统依赖（--with-deps 是最后的保险）
+            subprocess.run(["playwright", "install", "chromium"], check=True)
+        except Exception as e:
+            print(f"安装浏览器失败: {e}")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -206,19 +215,13 @@ async def scrape_detail(context, items, concurrency=3):
     await asyncio.gather(*(worker(i) for i in items))
     return items
 
-def install_playwright_browsers():
-    # 检查是否已经在 Streamlit Cloud 环境中安装过
-    try:
-        # 尝试运行 chromium 以检查是否存在
-        subprocess.run(["playwright", "install", "chromium"], check=True)
-    except Exception as e:
-        print(f"Playwright installation failed: {e}")
 
 # ─────────────────────────────────────────────
 # 🚀 主程序
 # ─────────────────────────────────────────────
 async def run():
-    install_playwright_browsers()
+    # 每次运行前确保浏览器在指定位置
+    ensure_playwright_installed()
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
         context = await browser.new_context(
