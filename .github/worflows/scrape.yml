@@ -1,0 +1,37 @@
+name: Scheduled Scraper
+
+on:
+  schedule:
+    # 每天北京时间早上 9 点和下午 6 点执行一次 (UTC 1:00 和 10:00)
+    - cron: '0 1,10 * * *'
+  workflow_dispatch: # 允许手动点击按钮触发
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Run Scraper
+        run: |
+          # 运行你的 interface.py 中的逻辑，或者直接运行爬虫脚本
+          python -c "import asyncio; from nb_state_owned_crawler import run; from recruitment_db import RecruitmentDB; db=RecruitmentDB('recruitment.db'); results=asyncio.run(run()); db.insert_many(results)"
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add recruitment.db
+          git commit -m "Update recruitment data" || echo "No changes to commit"
+          git push
