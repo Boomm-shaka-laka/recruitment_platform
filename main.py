@@ -9,6 +9,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ─── Session State ─────────────────────────────────────────────────────────────
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "宁波国企"
+ 
+ALL_TABS = ["宁波国企", "金融国企", "科技国企", "能源国企", "政策资讯"]
+TAB_ICONS = {
+    "宁波国企": "🏛️", "金融国企": "💰",
+    "科技国企": "💡", "能源国企": "⚡", "政策资讯": "📋",
+}
+ 
+# ─── 读取 URL 参数控制 tab（同页跳转，Streamlit 会重跑脚本）──────────────────────
+qp = st.query_params
+if "tab" in qp and qp["tab"] in ALL_TABS:
+    st.session_state.active_tab = qp["tab"]
+ 
+active_tab = st.session_state.active_tab
+
 # ─── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -54,51 +71,203 @@ st.markdown("""
 }
 
 /* ── Base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: -10px; }
+
+/* 1. 彻底清除 Streamlit 顶部的空隙和全局外边距 */
 html, body, [data-testid="stAppViewContainer"] {
     background: #eef2f7 !important;
     font-family: 'Noto Sans SC', sans-serif;
     font-size: 17px;
+    margin: 0 0;
+    padding: 0 0;
 }
-#MainMenu, footer, header { visibility: hidden; }
-[data-testid="stToolbar"] { display: none; }
-.block-container { padding: 0 !important; max-width: 100% !important; }
 
-/* ── NAV BAR ── */
+/* 2. 关键：强制覆盖 Streamlit 内部页边距 */
+[data-testid="stAppViewBlockContainer"], .block-container {
+    padding: 0rem !important;    /* 彻底清除内边距 */
+    max-width: 100% !important;  /* 宽度回归 100% */
+    width: 100vw !important;     /* 强制宽度等于视口宽度 */
+    margin: 0 !important;        /* 清除所有外边距 */
+    overflow-x: hidden !important; /* 严禁左右晃动 */
+}
+
+/* 补充：防止 Streamlit 内部的 div 限制宽度 */
+[data-testid="stVerticalBlock"] {
+    width: 100% !important;
+    gap: 0rem !important; /* 顺便消除组件间的默认纵向间隙 */
+}
+
+/* 隐藏原生组件 */
+#MainMenu, footer, header { visibility: hidden; height: 0; }
+[data-testid="stToolbar"] { display: none; }
+
 .nav-bar {
-    position: sticky; top: 0; z-index: 999;
+    position: sticky;
+    top: 0;
+    z-index: 999;
     background: linear-gradient(100deg, #0d1b3e 0%, #1a2f6b 60%, #0d2452 100%);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 52px; height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 52px;
+    height: 64px;
     box-shadow: 0 4px 28px rgba(13,27,62,0.45);
     animation: fadeIn 0.6s ease both;
 }
+
+/* Logo 样式 */
 .nav-logo {
-    display: flex; align-items: center; gap: 10px;
-    font-family: 'Playfair Display', serif;
-    color: #f0d687; font-size: 1.2rem; letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     white-space: nowrap;
+    flex-shrink: 0;
+    text-decoration: none; /* 确保Logo链接也没有下划线 */
 }
+
 .nav-logo-zh {
     font-family: 'Noto Serif SC', serif;
-    font-size: 1.35rem; font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 700;
     background: linear-gradient(135deg, #f0d687, #e8b84d, #f5e29a);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+
 .nav-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #f0d687; flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f0d687;
+    flex-shrink: 0;
     animation: pulseDot 2s infinite;
 }
-.nav-links { display: flex; gap: 28px; list-style: none; }
-.nav-links li a {
-    color: #b0bed8; text-decoration: none; font-size: 0.95rem;
-    letter-spacing: 0.07em; text-transform: uppercase;
-    padding: 6px 0; border-bottom: 2px solid transparent;
-    transition: color 0.25s, border-color 0.25s;
+
+/* ── 2. 导航链接 (Nav Links) ── */
+.nav-links {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    align-items: center;
+    margin: 0;
+    padding: 0;
 }
-.nav-links li a:hover { color: #f0d687; border-bottom-color: #f0d687; }
+
+.nav-item {
+    position: relative;
+}
+
+.nav-link {
+    color: #b0bed8;
+    text-decoration: none !important; /* 强制去除下划线 */
+    font-size: 0.92rem;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.22s, background 0.22s;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.nav-link:hover {
+    color: #f0d687;
+    background: rgba(240, 214, 135, 0.08);
+    text-decoration: none;
+}
+
+/* 小箭头图标 */
+.nav-link .arrow {
+    font-size: 0.55rem;
+    opacity: 0.55;
+    transition: transform 0.22s;
+    margin-left: 2px;
+}
+
+.nav-item:hover > .nav-link .arrow {
+    transform: rotate(180deg);
+}
+
+/* ── 3. 下拉菜单 (Dropdown) ── */
+.nav-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: linear-gradient(160deg, #0d1b3e, #14255c);
+    border: 1px solid rgba(240, 214, 135, 0.15);
+    border-radius: 14px;
+    padding: 8px;
+    min-width: 158px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.22s cubic-bezier(0.34, 1.48, 0.64, 1);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+}
+
+/* 桥接层：防止鼠标滑向菜单时由于间隙导致消失 */
+.nav-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 14px;
+}
+
+.nav-item:hover > .nav-dropdown {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 下拉菜单单项 */
+.drop-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    border-radius: 9px;
+    color: #8090b0;
+    font-size: 0.87rem;
+    text-decoration: none !important; /* 强制去除下划线 */
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.drop-item:hover {
+    background: rgba(240, 214, 135, 0.1);
+    color: #f0d687;
+    text-decoration: none;
+}
+
+.drop-item.cur-tab {
+    color: #f0d687;
+    background: rgba(240, 214, 135, 0.08);
+}
+
+.drop-divider {
+    height: 1px;
+    background: rgba(240, 214, 135, 0.08);
+    margin: 4px 0;
+}
+
+/* 动画定义 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseDot {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
 
 /* ── HERO ── */
 .hero {
@@ -219,41 +388,14 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 .stat-label { font-size: 0.85rem; color: #7090c0; letter-spacing: 0.06em; margin-top: 3px; }
 
-/* ── TABS ── */
-[data-testid="stTabs"] { background: transparent !important; }
-[data-testid="stTabs"] > div:first-child {
-    background: white !important;
-    border-bottom: none !important;
-    padding: 0 44px;
-    box-shadow: 0 3px 20px rgba(13,27,62,0.1);
-    gap: 0 !important;
-    position: sticky; top: 64px; z-index: 998;
-}
-button[data-baseweb="tab"] {
-    font-family: 'Noto Sans SC', sans-serif !important;
-    font-size: 1.05rem !important;
-    font-weight: 500 !important;
-    color: #7080a0 !important;
-    padding: 18px 28px !important;
-    border-bottom: 3px solid transparent !important;
-    border-radius: 0 !important;
-    letter-spacing: 0.04em;
-    transition: all 0.25s ease !important;
-}
-button[data-baseweb="tab"]:hover {
-    color: #1a2f6b !important;
-    background: rgba(26,47,107,0.05) !important;
-}
-button[aria-selected="true"][data-baseweb="tab"] {
-    color: #1a2f6b !important;
-    border-bottom: 3px solid #e8b84d !important;
-    font-weight: 700 !important;
-    background: rgba(232,184,77,0.06) !important;
-}
-[data-testid="stTabContent"] { padding: 0 !important; }
 
 /* ── CONTENT AREA ── */
-.content-area { max-width: 960px; margin: 46px auto; padding: 0 28px 90px; }
+.content-area { 
+    max-width: 960px; 
+    margin: 16px auto; 
+    padding: 0 10px 10px; 
+    
+}
 
 /* ── SECTION HEADER ── */
 .section-header {
@@ -394,12 +536,40 @@ button[aria-selected="true"][data-baseweb="tab"] {
     background: linear-gradient(90deg, transparent, #c8d8ee);
 }
 .pagination-hint::after { background: linear-gradient(90deg, #c8d8ee, transparent); }
+            
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+    .nav-bar { padding: 0 20px; }
+    .nav-links { gap: 0; }
+    .nav-link  { padding: 8px 10px; font-size: 0.82rem; }
+    .hero { height: 340px; }
+    .hero-title-zh { font-size: 2.8rem; }
+    .hero-seal { display: none; }
+    .stats-ribbon { flex-wrap: wrap; }
+    .stat-item { flex: 1 0 40%; max-width: 50%; }
+    .content-area { padding: 0 14px 60px; margin-top: 24px; }
+    .post-card { padding: 20px 18px; }
+}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── Nav ──────────────────────────────────────────────────────────────────────
-st.markdown("""
+# ─── Nav（下拉菜单，href="?tab=xxx" 同页跳转）──────────────────────────────────
+def drop_item(name, icon):
+    cls = "drop-item cur-tab" if name == active_tab else "drop-item"
+    # 使用 target="_top" 强制在最顶层窗口跳转
+    return f'<a class="{cls}" href="?tab={name}" target="_top">{icon}&nbsp; {name}</a>'
+ 
+drops_html = "".join([
+    drop_item("宁波国企", "🏛️"),
+    drop_item("金融国企", "💰"),
+    drop_item("科技国企", "💡"),
+    drop_item("能源国企", "⚡"),
+    '<div class="drop-divider"></div>',
+    drop_item("政策资讯", "📋"),
+])
+
+st.markdown(f"""
 <div class="nav-bar">
   <div class="nav-logo">
     <div class="nav-dot"></div>
@@ -407,10 +577,17 @@ st.markdown("""
     <span style="color:#4a6090;font-size:0.88rem;letter-spacing:0.06em;">State-owned Intelligence Recruitment</span>
   </div>
   <ul class="nav-links">
-    <li><a href="#">首页</a></li>
-    <li><a href="#">职位速递</a></li>
-    <li><a href="#">政策解读</a></li>
-    <li><a href="#">关于我们</a></li>
+    <li><a class="nav-link" href="?" target="_self">首页</a></li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">
+        职位速递 <span class="arrow">▼</span>
+      </a>
+      <div class="nav-dropdown">
+        {drops_html}
+      </div>
+    </li>
+    <li><a class="nav-link" href="#">政策解读</a></li>
+    <li><a class="nav-link" href="#">关于我们</a></li>
   </ul>
 </div>
 """, unsafe_allow_html=True)
@@ -583,13 +760,15 @@ POSTS = {
 
 
 def render_posts(tab_name: str):
-    # posts = POSTS.get(tab_name, [])
-    posts = interface.get_soe_data()
-    for post in posts:
-        post["tag"] = "tag-general"
-        post["tag_label"] = "制造业"
-        post["date"] = post["public_time"]
-        post["url"] = post["href"]
+    if tab_name != "宁波国企":
+        posts = POSTS.get(tab_name, [])
+    else:
+        posts = interface.get_soe_data()
+        for post in posts:
+            post["tag"] = "tag-general"
+            post["tag_label"] = "制造业"
+            post["date"] = post["public_time"]
+            post["url"] = post["href"]
     icon = SECTION_ICONS.get(tab_name, "📌")
     st.markdown('<div class="content-area">', unsafe_allow_html=True)
     st.markdown(f"""
@@ -623,10 +802,12 @@ def render_posts(tab_name: str):
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ─── Tabs ─────────────────────────────────────────────────────────────────────
-tabs = st.tabs(["🏛️ 宁波国企", "💰 金融国企", "💡 科技国企", "⚡ 能源国企", "📋 政策资讯"])
-tab_names = ["宁波国企", "金融国企", "科技国企", "能源国企", "政策资讯"]
+# # ─── Tabs ─────────────────────────────────────────────────────────────────────
+# tabs = st.tabs(["🏛️ 宁波国企", "💰 金融国企", "💡 科技国企", "⚡ 能源国企", "📋 政策资讯"])
+# tab_names = ["宁波国企", "金融国企", "科技国企", "能源国企", "政策资讯"]
 
-for tab, name in zip(tabs, tab_names):
-    with tab:
-        render_posts(name)
+# for tab, name in zip(tabs, tab_names):
+#     with tab:
+#         render_posts(name)
+render_posts(active_tab)
+    
