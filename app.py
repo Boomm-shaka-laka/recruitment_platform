@@ -404,18 +404,7 @@ def job_list_page_impl(job_category='国企招聘'):
 
             # 右侧列：放置按钮
             with col3:
-                # 使用 expander 或者直接放按钮。这里为了对齐和美观，放在 expander 外
-                # 直接创建一个按钮，当点击时，在新标签页打开链接
-                # Streamlit 本身不支持按钮直接跳转，所以我们创建一个隐藏的HTML链接，
-                # 并通过JavaScript在按钮点击时触发它。
-                button_key = f"btn_{idx}_{job['title']}" # 确保按钮有唯一键值
-                if st.button("🔍 查看详情", key=button_key):
-                    js_code = f"""
-                    <script>
-                    window.open("{job['link']}", "_blank");
-                    </script>
-                    """
-                    st.components.v1.html(js_code, height=0) # height=0 隐藏组件本身
+                st.link_button("🔍 查看详情", url=job['link'], type="secondary")
 
     # === 渲染分页器 (使用 Streamlit 原生组件) ===
     # 创建多列布局以实现水平居中
