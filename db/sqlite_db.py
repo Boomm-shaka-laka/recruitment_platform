@@ -184,9 +184,9 @@ class RecruitmentDB:
                 rec["title"].strip(),
                 rec.get("public_time"),
                 insert_time,
-                rec.get("click_through_rate"),
+                rec.get("click_through_rate", 0),
                 rec.get("source"),
-                rec.get("summary"),
+                rec.get("summary", ""),
                 rec.get("enrollment_time"),
                 rec.get("end_time"),
                 rec.get("href")

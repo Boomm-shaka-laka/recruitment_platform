@@ -1,4 +1,5 @@
 # ningbo_gzw_scraper.py
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -14,18 +15,27 @@ HEADERS = {
 
 def extract_source_and_time(text: str) -> tuple[str, str]:
     """从 info 文本中提取来源和发布时间"""
-    source = ""
-    public_time = ""
-    
-    source_match = re.search(r'来源[:：]\s*(\S+)', text)
-    if source_match:
-        source = source_match.group(1).strip()
-    
-    time_match = re.search(r'发布时间[:：]\s*(\d{4}-\d{1,2}-\d{1,2})', text)
-    if time_match:
-        public_time = time_match.group(1)
-    
-    return source, public_time
+    # 合并多行空格和换行，便于匹配
+    cleaned = re.sub(r'\s+', ' ', text)
+
+    # 提取来源和时间
+    source_match = re.search(r'来源：\s*([^|]+)', cleaned)
+    time_match = re.search(r'发布时间：\s*(\d{4}-\s*\d{2}-\s*\d{2}\s+\d{2}:\s*\d{2})', cleaned)
+
+    source = source_match.group(1).strip() if source_match else ""
+    time_str = time_match.group(1).strip() if time_match else ""
+    public_time = re.sub(r'\s+', '', time_str)
+
+    # 方法1：字符串切片（假设格式严格为 YYYY-MM-DDHH:MM）
+    if len(public_time) == 15 and public_time[10:11].isdigit():
+        # 在第10位后插入空格（即日期和时间之间）
+        fixed_time = public_time[:10] + ' ' + public_time[10:]
+    else:
+        fixed_time = re.sub(r'^(\d{4}-\d{2}-\d{2})(\d{2}:\d{2})$', r'\1 \2', public_time)
+
+    # 转为 datetime 对象
+    dt = datetime.strptime(fixed_time, "%Y-%m-%d %H:%M")
+    return source, dt
 
 def table_to_markdown(headers: List[str], rows: List[List[str]]) -> str:
     """将表格数据转为 Markdown 表格字符串"""
@@ -133,23 +143,12 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
         if info_div:
             info_text = info_div.get_text()
             source, public_time = extract_source_and_time(info_text)
-            print("source", source, "public_time", public_time)
-        
-        # 提取阅读量
-        click_through_rate = 0
-        artcount_elem = soup.select_one("#artcount")
-        if artcount_elem:
-            num_str = artcount_elem.get_text()
-            clean_num = re.sub(r"\D", "", num_str)
-            click_through_rate = int(clean_num) if clean_num else 0
         
         # 提取正文
         summary = parse_zoom_to_markdown(soup)
-        
         return {
             "source": source,
             "public_time": public_time,
-            "click_through_rate": click_through_rate,
             "summary": summary
         }
     except Exception as e:
@@ -161,3 +160,4 @@ if __name__ == "__main__":
     results = fetch_notice_list()
     result = results[0]
     notice = fetch_notice_detail(result.get("url"))
+    print(notice)
