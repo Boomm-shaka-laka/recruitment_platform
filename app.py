@@ -482,4 +482,4 @@ pages = {
 nav = st.navigation(pages, position="top")
 nav.run()
 
-st.link_button("Go to gallery", "https://streamlit.io/gallery")
+st.markdown(f"[🔗 访问官网](https://streamlit.io/gallery)")
