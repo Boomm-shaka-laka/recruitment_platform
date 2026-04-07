@@ -184,21 +184,6 @@ st.markdown("""
     color: #f0d687;
     line-height: 1.3;
 }
-/* ── Clickable Title Link ── */
-.job-card-title-link {
-    text-decoration: none !important;
-    color: inherit !important;
-    cursor: pointer;
-    display: inline-block; /* 关键：确保可点击区域 */
-    width: fit-content;
-}
-.job-card-title-link h3 {
-    transition: color 0.2s ease;
-}
-.job-card-title-link:hover h3 {
-    color: #fff3c0 !important;
-    text-decoration: underline !important;
-}
 .job-card p.overview {
     font-size: 0.95rem;
     line-height: 1.6;
@@ -367,18 +352,17 @@ def job_list_page_impl(job_category='国企招聘'):
     end_idx = start_idx + items_per_page
     current_jobs = jobs[start_idx:end_idx]
 
+    # 渲染当前页的卡片
     for idx, job in enumerate(current_jobs):
-        safe_link = job['link'].replace("'", "\\'")  # 防止 JS 注入（基础防护）
         st.markdown(f"""
         <div class="job-card" style="animation-delay: {idx * 0.15}s;">
-            <a href="{job['link']}" target="_blank" class="job-card-title-link">
-                <h3>{job['title']}</h3>
-            </a>
+            <h3>{job['title']}</h3>
             <p class="overview">{job['overview']}</p>
             <div class="job-card-footer">
                 <div class="job-card-meta">
                     <span>{job['publish_time']}</span>
                 </div>
+                <a href="{job['link']}" target="_blank" class="job-card-link">🔍 查看详情</a>
             </div>
         </div>
         """, unsafe_allow_html=True)
