@@ -16,7 +16,7 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 
 # ====== 定义 dialog 函数（必须在顶层）======
-@st.dialog("岗位详情")
+@st.dialog("岗位详情", width="large")
 def show_job_summary(summary: str, title: str):
     st.subheader(title)
     st.markdown(summary if summary else "暂无详细描述。")
