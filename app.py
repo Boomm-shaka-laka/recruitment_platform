@@ -482,4 +482,26 @@ pages = {
 nav = st.navigation(pages, position="top")
 nav.run()
 
-st.markdown(f"[🔗 访问官网](https://streamlit.io/gallery)")
+st.markdown(
+    f"""
+    <a href="https://streamlit.io/gallery" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+        <div style="
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #1a2a4a;
+            color: #f0d687;
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: 1px solid rgba(240, 214, 135, 0.3);
+            font-size: 0.88rem;
+            transition: all 0.25s ease;
+            width: 100%;
+            text-align: center;
+        ">
+            🔍 查看详情
+        </div>
+    </a>
+    """, 
+    unsafe_allow_html=True
+)
