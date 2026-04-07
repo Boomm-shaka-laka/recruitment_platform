@@ -18,13 +18,32 @@ if 'current_page' not in st.session_state:
 # === 1. 自定义CSS样式 ===
 st.markdown("""
 <style>
+/* 
+   添加一个强制非粘性布局的媒体查询，
+   防止在某些移动端浏览器上因fixed定位导致的问题 
+*/
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    /* 针对WebKit内核（如Safari, 微信浏览器） */
+    header[data-testid="stHeader"], div[data-testid="stToolbar"] {
+        position: static !important; /* 强制取消固定定位 */
+        transform: none !important;
+    }
+}
+
+/* 
+   为整个容器添加一个明确的3D上下文，
+   有时可以解决一些移动端的渲染层序问题 
+*/
+main > .block-container {
+    transform: translateZ(0); /* 触发硬件加速 */
+}
+
 /* ── HERO ── */
 .hero {
     position: relative; 
     width: 100%; 
     height: 400px;
     overflow: hidden;
-    #background: linear-gradient(130deg, #0a1628 0%, #0d2452 35%, #183a7a 65%, #0a2240 100%);
     background-size: 300% 300%;
     animation: gradientFlow 12s ease infinite;
     display: flex; 
@@ -156,7 +175,7 @@ st.markdown("""
 /* ── Job Card Styles ── */
 .job-card {
     position: relative;
-    background: rgba(10, 22, 40, 0.85);
+    background: rgba(10, 22, 40, 0.95); /* 增加背景不透明度 */
     border: 1px solid rgba(240, 214, 135, 0.25);
     border-radius: 16px;
     padding: 24px;
@@ -164,19 +183,21 @@ st.markdown("""
     box-shadow:
         0 8px 20px rgba(0, 0, 0, 0.4),
         inset 0 0 0 1px rgba(240, 214, 135, 0.1);
-    backdrop-filter: blur(8px);
+    /* backdrop-filter: blur(8px); */ /* 注释掉这一行 */
     animation: cardIn 0.6s ease forwards;
-    overflow: hidden;
+    overflow: visible; /* 改为 visible */
     transition: all 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
     margin-bottom: 28px;
+    isolation: isolate; /* 创建独立的堆叠上下文 */
 }
+
 .job-card:hover {
     transform: translateY(-6px) scale(1.02);
     box-shadow:
         0 16px 32px rgba(232, 184, 77, 0.35),
         inset 0 0 0 1px rgba(240, 214, 135, 0.35);
-    z-index: 10;
 }
+
 .job-card h3 {
     font-family: 'Noto Serif SC', serif;
     font-size: 1.4rem;
@@ -184,12 +205,14 @@ st.markdown("""
     color: #f0d687;
     line-height: 1.3;
 }
+
 .job-card p.overview {
     font-size: 0.95rem;
     line-height: 1.6;
     color: #a0b8d0;
     margin-bottom: 20px;
 }
+
 .job-card-footer {
     display: flex;
     justify-content: space-between;
@@ -197,19 +220,22 @@ st.markdown("""
     margin-top: 12px;
     font-size: 0.82rem;
     color: #6a8ab8;
+    position: relative; /* 为内部的按钮提供定位上下文 */
 }
+
 .job-card-meta {
     display: flex;
     gap: 12px;
 }
+
 .job-card-meta span::before {
     content: "📅 ";
 }
-            
+
 .job-card-link {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
+    position: relative;
+    float: right; /* 浮动到右侧 */
+    clear: both; /* 清除浮动，防止影响后续元素 */
     background: linear-gradient(135deg, #1a2a4a, #0d1b33);
     border: 1px solid rgba(240, 214, 135, 0.3);
     color: #f0d687;
@@ -221,8 +247,10 @@ st.markdown("""
     align-items: center;
     gap: 6px;
     transition: all 0.25s ease;
-    z-index: 2;
+    margin-top: 10px; /* 与上方内容保持距离 */
+    margin-left: auto; /* 右对齐的另一种方式，可以替代float */
 }
+
 .job-card-link:hover {
     background: linear-gradient(135deg, #223355, #121f3a);
     border-color: rgba(240, 214, 135, 0.6);
@@ -287,6 +315,8 @@ st.markdown("""
         right: 16px;
         font-size: 0.82rem;
         padding: 5px 12px;
+        margin-top: 0; /* 移除顶部边距 */
+        margin-left: auto; /* 确保右对齐 */
     }
     .job-card-meta {
         font-size: 0.78rem;
