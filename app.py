@@ -481,3 +481,5 @@ pages = {
 # === 4. 运行应用 ===
 nav = st.navigation(pages, position="top")
 nav.run()
+
+st.link_button("Go to gallery", "https://streamlit.io/gallery")
