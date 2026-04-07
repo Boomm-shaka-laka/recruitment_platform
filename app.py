@@ -358,7 +358,7 @@ def render_hero_section():
           <div class="hero-divider-diamond"></div>
           <div class="hero-divider-line right"></div>
         </div>
-        <div class="hero-subtitle">汇聚宁波优质国企岗位 · 精准匹配人才需求 · 助力职业腾飞</div>
+        <div class="hero-subtitle">汇聚宁波优质体制内岗位 · 精准匹配人才需求 · 助力职业腾飞</div>
       </div>
       <div class="hero-seal">
         <div class="hero-seal-outer"></div>
