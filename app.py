@@ -404,7 +404,8 @@ def job_list_page_impl(job_category='国企招聘'):
 
             # 右侧列：放置按钮
             with col3:
-                st.link_button("🔍 查看详情", url=job['link'], type="secondary")
+                # st.link_button("🔍 查看详情", url=job['link'], type="secondary")
+                st.markdown(f"[🔗 访问官网]({job['link']})", unsafe_allow_html=True)
 
     # === 渲染分页器 (使用 Streamlit 原生组件) ===
     # 创建多列布局以实现水平居中
