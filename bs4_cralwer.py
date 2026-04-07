@@ -133,6 +133,7 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
         if info_div:
             info_text = info_div.get_text()
             source, public_time = extract_source_and_time(info_text)
+            print("source", source, "public_time", public_time)
         
         # 提取阅读量
         click_through_rate = 0
@@ -158,4 +159,5 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
 
 if __name__ == "__main__":
     results = fetch_notice_list()
-    print(results)
+    result = results[0]
+    notice = fetch_notice_detail(result.get("url"))
