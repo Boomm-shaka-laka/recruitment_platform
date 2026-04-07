@@ -18,32 +18,13 @@ if 'current_page' not in st.session_state:
 # === 1. 自定义CSS样式 ===
 st.markdown("""
 <style>
-/* 
-   添加一个强制非粘性布局的媒体查询，
-   防止在某些移动端浏览器上因fixed定位导致的问题 
-*/
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    /* 针对WebKit内核（如Safari, 微信浏览器） */
-    header[data-testid="stHeader"], div[data-testid="stToolbar"] {
-        position: static !important; /* 强制取消固定定位 */
-        transform: none !important;
-    }
-}
-
-/* 
-   为整个容器添加一个明确的3D上下文，
-   有时可以解决一些移动端的渲染层序问题 
-*/
-main > .block-container {
-    transform: translateZ(0); /* 触发硬件加速 */
-}
-
 /* ── HERO ── */
 .hero {
     position: relative; 
     width: 100%; 
     height: 400px;
     overflow: hidden;
+    #background: linear-gradient(130deg, #0a1628 0%, #0d2452 35%, #183a7a 65%, #0a2240 100%);
     background-size: 300% 300%;
     animation: gradientFlow 12s ease infinite;
     display: flex; 
@@ -175,7 +156,7 @@ main > .block-container {
 /* ── Job Card Styles ── */
 .job-card {
     position: relative;
-    background: rgba(10, 22, 40, 0.95); /* 增加背景不透明度 */
+    background: rgba(10, 22, 40, 0.85);
     border: 1px solid rgba(240, 214, 135, 0.25);
     border-radius: 16px;
     padding: 24px;
@@ -183,21 +164,19 @@ main > .block-container {
     box-shadow:
         0 8px 20px rgba(0, 0, 0, 0.4),
         inset 0 0 0 1px rgba(240, 214, 135, 0.1);
-    /* backdrop-filter: blur(8px); */ /* 注释掉这一行 */
+    backdrop-filter: blur(8px);
     animation: cardIn 0.6s ease forwards;
-    overflow: visible; /* 改为 visible */
+    overflow: hidden;
     transition: all 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
     margin-bottom: 28px;
-    isolation: isolate; /* 创建独立的堆叠上下文 */
 }
-
 .job-card:hover {
     transform: translateY(-6px) scale(1.02);
     box-shadow:
         0 16px 32px rgba(232, 184, 77, 0.35),
         inset 0 0 0 1px rgba(240, 214, 135, 0.35);
+    z-index: 10;
 }
-
 .job-card h3 {
     font-family: 'Noto Serif SC', serif;
     font-size: 1.4rem;
@@ -205,14 +184,12 @@ main > .block-container {
     color: #f0d687;
     line-height: 1.3;
 }
-
 .job-card p.overview {
     font-size: 0.95rem;
     line-height: 1.6;
     color: #a0b8d0;
     margin-bottom: 20px;
 }
-
 .job-card-footer {
     display: flex;
     justify-content: space-between;
@@ -220,22 +197,19 @@ main > .block-container {
     margin-top: 12px;
     font-size: 0.82rem;
     color: #6a8ab8;
-    position: relative; /* 为内部的按钮提供定位上下文 */
 }
-
 .job-card-meta {
     display: flex;
     gap: 12px;
 }
-
 .job-card-meta span::before {
     content: "📅 ";
 }
-
+            
 .job-card-link {
-    position: relative;
-    float: right; /* 浮动到右侧 */
-    clear: both; /* 清除浮动，防止影响后续元素 */
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
     background: linear-gradient(135deg, #1a2a4a, #0d1b33);
     border: 1px solid rgba(240, 214, 135, 0.3);
     color: #f0d687;
@@ -247,10 +221,8 @@ main > .block-container {
     align-items: center;
     gap: 6px;
     transition: all 0.25s ease;
-    margin-top: 10px; /* 与上方内容保持距离 */
-    margin-left: auto; /* 右对齐的另一种方式，可以替代float */
+    z-index: 2;
 }
-
 .job-card-link:hover {
     background: linear-gradient(135deg, #223355, #121f3a);
     border-color: rgba(240, 214, 135, 0.6);
@@ -315,8 +287,6 @@ main > .block-container {
         right: 16px;
         font-size: 0.82rem;
         padding: 5px 12px;
-        margin-top: 0; /* 移除顶部边距 */
-        margin-left: auto; /* 确保右对齐 */
     }
     .job-card-meta {
         font-size: 0.78rem;
@@ -384,28 +354,18 @@ def job_list_page_impl(job_category='国企招聘'):
 
     # 渲染当前页的卡片
     for idx, job in enumerate(current_jobs):
-        # 创建一个容器作为卡片背景
-        with st.container(border = True, gap="small"):
-            # 标题，使用 Streamlit 的 markdown 并通过 CSS 设置颜色
-            st.markdown(f"#### <span style='color: #f0d687;'>{job['title']}</span>", unsafe_allow_html=True)
-            # 中间两行纯文本摘要
-            st.write(job['overview'])
-            # 如果需要第二行，可以再加一个 st.write 或者将文本切分成两部分
-            # st.write(job['overview_line_2']) 
-
-            # 使用列布局，模拟左右分区
-            col1, col2, col3 = st.columns([2, 10, 1]) 
-
-            # 左侧列：放置标题、摘要和发布日期
-            with col1:
-                # 底部左侧：发布日期
-                st.caption(f"📅 {job['publish_time']}")
-
-
-            # 右侧列：放置按钮
-            with col3:
-                # st.link_button("🔍 查看详情", url=job['link'], type="secondary")
-                st.markdown(f"[🔗 访问官网]({job['link']})", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="job-card" style="animation-delay: {idx * 0.15}s;">
+            <h3>{job['title']}</h3>
+            <p class="overview">{job['overview']}</p>
+            <div class="job-card-footer">
+                <div class="job-card-meta">
+                    <span>{job['publish_time']}</span>
+                </div>
+                <a href="{job['link']}" target="_blank" class="job-card-link">🔍 查看详情</a>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # === 渲染分页器 (使用 Streamlit 原生组件) ===
     # 创建多列布局以实现水平居中
@@ -481,27 +441,3 @@ pages = {
 # === 4. 运行应用 ===
 nav = st.navigation(pages, position="top")
 nav.run()
-
-st.markdown(
-    f"""
-    <a href="https://streamlit.io/gallery" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-        <div style="
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #1a2a4a;
-            color: #f0d687;
-            padding: 6px 14px;
-            border-radius: 30px;
-            border: 1px solid rgba(240, 214, 135, 0.3);
-            font-size: 0.88rem;
-            transition: all 0.25s ease;
-            width: 100%;
-            text-align: center;
-        ">
-            🔍 查看详情
-        </div>
-    </a>
-    """, 
-    unsafe_allow_html=True
-)
