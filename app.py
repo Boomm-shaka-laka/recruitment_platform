@@ -15,6 +15,12 @@ st.set_page_config(
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 
+# ====== 定义 dialog 函数（必须在顶层）======
+@st.dialog("岗位详情")
+def show_job_summary(summary: str, title: str):
+    st.subheader(title)
+    st.markdown(summary if summary else "暂无详细描述。")
+
 # === 1. 自定义CSS样式 ===
 st.markdown("""
 <style>
@@ -329,12 +335,14 @@ def job_list_page_impl(job_category='国企招聘'):
     for post in posts:
         title = post.get("title", "")
         publish_time = post.get("public_time", "未知")
+        summary = post.get("summary")
         overview = post.get("summary", "")[:100] if post.get("summary") else ""
         link = post.get("href", "#")
         jobs.append({
             "title": title,
             "overview": overview,
             "publish_time": publish_time,
+            "summary": summary,
             "link": link
         })
 
@@ -366,6 +374,10 @@ def job_list_page_impl(job_category='国企招聘'):
             </div>
         </div>
         """, unsafe_allow_html=True)
+        # 👇 新增：按钮触发 dialog
+        if st.button("查看全文", key=f"btn_{start_idx + idx}"):
+            show_job_summary(job['summary'], job['title'])
+        
 
     # === 渲染分页器 (使用 Streamlit 原生组件) ===
     # 创建多列布局以实现水平居中
