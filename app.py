@@ -1,3 +1,5 @@
+import time
+import random
 import streamlit as st
 from interface import get_soe_data
 
@@ -8,6 +10,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# 初始化当前页码（默认第1页）
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 1
 
 # === 1. 自定义CSS样式 ===
 st.markdown("""
@@ -299,48 +305,96 @@ def public_institution_job_page():
     st.title("甬才智聘 - 事业单位招聘页面")
     st.markdown("情境期待。。。")
 
+def chat_page():
+    render_hero_section()
+    prompt = st.chat_input()
+
 def about_page():
     render_hero_section()
     st.title("关于我们")
     st.write("这里是关于我们的介绍内容。")
 
 def job_list_page_impl(job_category='国企招聘'):
-    st.subheader(f"{job_category}")
+    subheader_col1, subheader_col2, subheader_col3 = st.columns([1, 2, 1])
+    with subheader_col1:
+        st.subheader(f"{job_category}")
+    with subheader_col3:
+        prompt = st.chat_input("智能查询")
+    if prompt:
+        pass
     posts = get_soe_data()
-    all_jobs = {}
+    
+    # 构建 jobs 列表（和你原来一样）
     jobs = []
     for post in posts:
         title = post.get("title", "")
-        publish_time = post.get("public_time", None)
-        overview = post.get("summary", "")
-        if overview:
-            overview = overview[:100]
-        link = post.get("href", "")
+        publish_time = post.get("public_time", "未知")
+        overview = post.get("summary", "")[:100] if post.get("summary") else ""
+        link = post.get("href", "#")
         jobs.append({
             "title": title,
             "overview": overview,
             "publish_time": publish_time,
             "link": link
         })
-    all_jobs["国企招聘"] = jobs
-    jobs_data = all_jobs.get(job_category, [])
-    if not jobs_data:
+
+    if not jobs:
         st.info("暂无该类别的招聘岗位信息。")
         return
 
-    for idx, job in enumerate(jobs_data):
+    # === 分页逻辑 ===
+    items_per_page = 5
+    total_items = len(jobs)
+    total_pages = (total_items + items_per_page - 1) // items_per_page  # 向上取整
+
+    # 计算当前页的数据切片
+    start_idx = (st.session_state.current_page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    current_jobs = jobs[start_idx:end_idx]
+
+    # 渲染当前页的卡片
+    for idx, job in enumerate(current_jobs):
         st.markdown(f"""
         <div class="job-card" style="animation-delay: {idx * 0.15}s;">
             <h3>{job['title']}</h3>
             <p class="overview">{job['overview']}</p>
             <div class="job-card-footer">
                 <div class="job-card-meta">
-                    <span>{job.get('publish_time', '未知')}</span>
+                    <span>{job['publish_time']}</span>
                 </div>
                 <a href="{job['link']}" target="_blank" class="job-card-link">🔍 查看详情</a>
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    # === 渲染分页器 (使用 Streamlit 原生组件) ===
+    # 创建多列布局以实现水平居中
+    col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+
+    # 上一页按钮
+    with col1:
+        prev_disabled = st.session_state.current_page <= 1
+        if st.button("⬅️ 上一页", key="prev_btn", use_container_width=True, disabled=prev_disabled):
+            st.session_state.current_page -= 1
+            st.rerun()
+
+    # 显示总条数和页数信息
+    with col3:
+        st.markdown(
+            f"<div style='text-align: center; padding-top: 10px; color: #a0b8d0; font-size: 0.9rem;'>"
+            f"共 {total_items} 条岗位信息 | "
+            f"第 {st.session_state.current_page} 页 / 共 {total_pages} 页"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+    # 下一页按钮
+    with col5:
+        next_disabled = st.session_state.current_page >= total_pages
+        if st.button("下一页 ➡️", key="next_btn", use_container_width=True, disabled=next_disabled):
+            st.session_state.current_page += 1
+            st.rerun()
+
 
 def render_hero_section():
     st.markdown("""
@@ -378,7 +432,11 @@ pages = {
     "关于": [
         st.Page(about_page, title="关于我们", icon="ℹ️"),
     ],
+    "智能工具": [
+        st.Page(chat_page, title="智能招聘助手", icon="ℹ️"),
+    ],
 }
+
 
 # === 4. 运行应用 ===
 nav = st.navigation(pages, position="top")
