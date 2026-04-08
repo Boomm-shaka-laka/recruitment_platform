@@ -69,25 +69,10 @@ class RecruitmentDB:
     # ─────────────────────────────────────────────
 
     def create_table(self):
-        """
-        创建招聘信息表 recruitment_info_soe（若已存在则跳过）
-
-        字段说明：
-          id                INTEGER  主键，自增
-          title             TEXT     招聘标题（必填）
-          public_time       TEXT     发布时间
-          insert_time       TEXT     入库时间（自动填充）
-          click_through_rate REAL    点击率
-          href              TEXT     链接
-          source            TEXT     数据来源
-          summary           TEXT     摘要
-          enrollment_time   TEXT     报名开始时间
-          end_time          TEXT     报名截止时间
-        """
         ddl = f"""
         CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-            title               TEXT    NOT NULL,
+            title               TEXT    NOT NULL UNIQUE,  -- ←←← 关键：加上 UNIQUE
             public_time         TEXT,
             insert_time         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
             click_through_rate  REAL,
@@ -101,7 +86,6 @@ class RecruitmentDB:
         with self._get_connection() as conn:
             conn.execute(ddl)
         logger.info(f"✅ 表 [{self.TABLE_NAME}] 已就绪")
-
     # ─────────────────────────────────────────────
     # 插入数据
     # ─────────────────────────────────────────────
@@ -111,35 +95,24 @@ class RecruitmentDB:
         title: str,
         public_time: Optional[str] = None,
         click_through_rate: Optional[float] = None,
+        href: Optional[str] = None,  # ← 注意：你漏了这个参数！
         source: Optional[str] = None,
         summary: Optional[str] = None,
         enrollment_time: Optional[str] = None,
         end_time: Optional[str] = None,
     ) -> int:
-        """
-        插入单条招聘记录
-
-        :param title:               招聘标题（必填）
-        :param public_time:         发布时间，格式建议 'YYYY-MM-DD'
-        :param click_through_rate:  点击率，如 0.35 表示 35%
-        :param source:              数据来源，如 '国资委官网'
-        :param href:                链接
-        :param summary:             招聘摘要
-        :param enrollment_time:     报名开始时间
-        :param end_time:            报名截止时间
-        :return:                    新插入记录的 id
-        """
         if not title or not title.strip():
             raise ValueError("title 不能为空")
 
         insert_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         sql = f"""
-        INSERT INTO {self.TABLE_NAME}
+        INSERT OR IGNORE INTO {self.TABLE_NAME}
             (title, public_time, insert_time, click_through_rate,
-             source, summary, enrollment_time, end_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """
+            source, summary, enrollment_time, end_time, href)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """  # ← 注意：你原来漏了 href 字段！
+        
         params = (
             title.strip(),
             public_time,
@@ -149,39 +122,37 @@ class RecruitmentDB:
             summary,
             enrollment_time,
             end_time,
+            href,  # ← 补上
         )
 
         with self._get_connection() as conn:
             cursor = conn.execute(sql, params)
             new_id = cursor.lastrowid
 
-        logger.info(f"✅ 插入成功，id={new_id}，title='{title}'")
-        return new_id
+        if new_id == 0:
+            logger.info(f"⚠️ 插入跳过（title 已存在）：'{title}'")
+            return 0  # 或者返回 -1 表示未插入
+        else:
+            logger.info(f"✅ 插入成功，id={new_id}，title='{title}'")
+            return new_id
 
     def insert_many(self, records: list[dict]) -> int:
-        """
-        批量插入招聘记录
-
-        :param records: 字典列表，每个字典的 key 对应字段名，title 为必填
-        :return:        成功插入的条数
-        """
         if not records:
             logger.warning("insert_many：传入数据为空，跳过")
             return 0
 
         insert_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sql = f"""
-        INSERT INTO {self.TABLE_NAME}
+        INSERT OR IGNORE INTO {self.TABLE_NAME}
             (title, public_time, insert_time, click_through_rate,
-             source, summary, enrollment_time, end_time,href)
+            source, summary, enrollment_time, end_time, href)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         params_list = []
         for rec in records:
-            if not rec.get("title", "").strip():
-                raise ValueError(f"批量插入中存在空 title，记录：{rec}")
+            title = rec.get("title", "").strip()
             params_list.append((
-                rec["title"].strip(),
+                title,
                 rec.get("public_time"),
                 insert_time,
                 rec.get("click_through_rate", 0),
@@ -193,87 +164,13 @@ class RecruitmentDB:
             ))
 
         with self._get_connection() as conn:
-            conn.executemany(sql, params_list)
+            cursor = conn.executemany(sql, params_list)
+            actual_count = conn.total_changes  # 获取实际插入行数
 
-        count = len(params_list)
-        print(f"✅ 批量插入成功，共 {count} 条")
-        logger.info(f"✅ 批量插入成功，共 {count} 条")
-        return count
+        print(f"✅ 批量插入完成，尝试 {len(params_list)} 条，实际新增 {actual_count} 条")
+        logger.info(f"✅ 批量插入完成，尝试 {len(params_list)} 条，实际新增 {actual_count} 条")
+        return actual_count
 
-    # ─────────────────────────────────────────────
-    # 删除数据
-    # ─────────────────────────────────────────────
-
-    def delete_by_id(self, record_id: int) -> bool:
-        """
-        按主键删除单条记录
-
-        :param record_id: 记录 id
-        :return:          True=删除成功，False=记录不存在
-        """
-        sql = f"DELETE FROM {self.TABLE_NAME} WHERE id = ?"
-        with self._get_connection() as conn:
-            cursor = conn.execute(sql, (record_id,))
-            affected = cursor.rowcount
-
-        if affected:
-            logger.info(f"✅ 删除成功，id={record_id}")
-            return True
-        else:
-            logger.warning(f"⚠️ 未找到 id={record_id} 的记录")
-            return False
-
-    def delete_by_condition(
-        self,
-        source: Optional[str] = None,
-        end_time_before: Optional[str] = None,
-        title_keyword: Optional[str] = None,
-    ) -> int:
-        """
-        按条件删除记录（多条件取交集）
-
-        :param source:          按来源精确匹配删除
-        :param end_time_before: 删除截止时间早于此值的记录，格式 'YYYY-MM-DD'
-        :param title_keyword:   按标题关键词模糊删除
-        :return:                实际删除的条数
-        """
-        conditions = []
-        params = []
-
-        if source:
-            conditions.append("source = ?")
-            params.append(source)
-        if end_time_before:
-            conditions.append("end_time < ?")
-            params.append(end_time_before)
-        if title_keyword:
-            conditions.append("title LIKE ?")
-            params.append(f"%{title_keyword}%")
-
-        if not conditions:
-            raise ValueError("至少需要指定一个删除条件，避免误删全表")
-
-        sql = f"DELETE FROM {self.TABLE_NAME} WHERE {' AND '.join(conditions)}"
-
-        with self._get_connection() as conn:
-            cursor = conn.execute(sql, params)
-            affected = cursor.rowcount
-
-        logger.info(f"✅ 条件删除完成，共删除 {affected} 条")
-        return affected
-
-    def delete_all(self) -> int:
-        """
-        清空整张表（谨慎使用！）
-
-        :return: 删除的条数
-        """
-        sql = f"DELETE FROM {self.TABLE_NAME}"
-        with self._get_connection() as conn:
-            cursor = conn.execute(sql)
-            affected = cursor.rowcount
-        logger.warning(f"⚠️ 已清空表 [{self.TABLE_NAME}]，共删除 {affected} 条")
-        return affected
 
     # ─────────────────────────────────────────────
     # 辅助查询（方便调试验证）
@@ -333,11 +230,5 @@ if __name__ == "__main__":
     print("所有记录：")
     for row in db.query_all():
         print(row)
-
-    # 按 id 删除
-    db.delete_by_id(1)
-
-    # 按条件删除（截止时间早于 2025-04-01 且来源为央企招聘网）
-    db.delete_by_condition(source="央企招聘网", end_time_before="2025-04-01")
 
     print(f"删除后记录数：{db.count()}")
