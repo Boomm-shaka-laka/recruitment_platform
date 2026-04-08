@@ -23,11 +23,15 @@ def create_session_with_retries_and_timeout():
     session = requests.Session()
     
     # 定义重试策略
+    # total=5: 增加重试总次数
+    # status_forcelist: 遇到这些状态码就重试
+    # allowed_methods: 允许重试的方法
+    # backoff_factor=2: 重试间隔时间递增，第一次1s, 第二次2s, 第三次4s, 第五次8s...
     retry_strategy = Retry(
-        total=3,  # 总共重试3次
-        status_forcelist=[429, 500, 502, 503, 504],  # 遇到这些状态码就重试
+        total=5,  # 增加重试次数
+        status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=["HEAD", "GET", "OPTIONS"],
-        backoff_factor=1,  # 重试间隔时间递增
+        backoff_factor=2,  # 增加退避因子，让重试间隔更长
     )
     
     # 创建一个适配器，将重试策略应用上去
@@ -120,14 +124,16 @@ def fetch_notice_list() -> List[Dict[str, str]]:
     session = create_session_with_retries_and_timeout()
     try:
         print(f"正在请求列表页: {LIST_PAGE_URL}")
-        # 使用 session.get，并设置 (连接超时, 读取超时)
-        resp = session.get(LIST_PAGE_URL, timeout=(20, 60))
+        # 进一步增加超时时间
+        # (连接超时30秒, 读取超时120秒) - 连接30s, 读取120s
+        resp = session.get(LIST_PAGE_URL, timeout=(30, 120))
         resp.raise_for_status()
         resp.encoding = 'utf-8'
         soup = BeautifulSoup(resp.text, "html.parser")
         
         ul = soup.select_one('#jw_sgzw_二级栏目列表_标题list > div > div > ul')
         if not ul:
+            print("[WARN] 未找到公告列表元素，页面结构可能已改变。")
             return []
         
         notices = []
@@ -140,11 +146,16 @@ def fetch_notice_list() -> List[Dict[str, str]]:
                 notices.append({"title": title, "url": full_url})
         print(f"成功获取到 {len(notices)} 条公告链接。")
         return notices
+    except requests.exceptions.Timeout as te:
+        print(f"[ERROR] 请求列表页超时: {te}")
+    except requests.exceptions.RequestException as re:
+        print(f"[ERROR] 网络请求错误: {re}")
     except Exception as e:
         print(f"[ERROR] 获取公告列表失败: {e}")
-        return []
     finally:
         session.close()
+
+    return []
 
 def fetch_notice_detail(url: str) -> Dict[str, object]:
     """
@@ -153,7 +164,8 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
     session = create_session_with_retries_and_timeout()
     try:
         print(f"正在请求详情页: {url}")
-        resp = session.get(url, timeout=(20, 60))
+        # 对详情页也增加超时时间
+        resp = session.get(url, timeout=(30, 120))
         resp.raise_for_status()
         resp.encoding = 'utf-8'
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -171,13 +183,17 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
             "public_time": public_time,
             "summary": summary
         }
+    except requests.exceptions.Timeout as te:
+        print(f"[ERROR] 请求详情页超时 ({url}): {te}")
+    except requests.exceptions.RequestException as re:
+        print(f"[ERROR] 详情页网络请求错误 ({url}): {re}")
     except Exception as e:
         print(f"[ERROR] 抓取详情页失败 ({url}): {e}")
-        return {}
     finally:
         session.close()
+    
+    return {}
 
-# --- 保持原有的 main 函数不变 ---
 if __name__ == "__main__":
     results = fetch_notice_list()
     if results:
