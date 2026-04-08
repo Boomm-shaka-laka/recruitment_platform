@@ -3,10 +3,8 @@ name: Daily Recruitment Crawler
 on:
   schedule:
     # 每天 9:00 和 15:00（UTC+8 北京时间）
-    # 注意：GitHub Actions 使用 UTC 时间，所以北京时间 9:00 = UTC 1:00
-    - cron: '0 1,7 * * *'   # UTC 1:00 → 北京 9:00；UTC 7:00 → 北京 15:00
-
-  # 允许手动触发
+    # GitHub Actions 使用 UTC 时间：北京时间 9:00 = UTC 1:00，15:00 = UTC 7:00
+    - cron: '0 1,7 * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,23 +18,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'  # 根据你本地环境调整，建议 3.9+
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # 确保你有 requirements.txt
+          pip install -r requirements.txt
 
       - name: Run crawler and save to DB
-        env:
-          # 如果未来需要敏感信息（如 API key），可在这里用 secrets
-          # EXAMPLE_KEY: ${{ secrets.EXAMPLE_KEY }}
         run: |
           python interface.py
 
-      - name: Commit and push updated database (optional)
-        # 如果你想把爬取结果（recruitment.db）保存回仓库，取消注释以下步骤
-        # 注意：频繁写入二进制文件可能不是最佳实践，建议仅用于演示或小规模数据
+      - name: Commit and push updated database
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
