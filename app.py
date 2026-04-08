@@ -1,7 +1,7 @@
 import time
 import random
 import streamlit as st
-from interface import get_soe_data
+from interface import crawler_to_db, get_soe_data
 
 # --- 页面配置 ---
 st.set_page_config(
@@ -453,3 +453,8 @@ pages = {
 # === 4. 运行应用 ===
 nav = st.navigation(pages, position="top")
 nav.run()
+
+get_messages = st.button("获取消息")
+if get_messages:
+    data = crawler_to_db()
+    st.write(data)
