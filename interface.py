@@ -21,5 +21,6 @@ def get_soe_data():
     return results
 
 
+
 if __name__ == "__main__":
     crawler_to_db()
