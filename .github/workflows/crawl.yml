@@ -1,42 +1,37 @@
-mkdir -p .github/workflows
-cat > .github/workflows/crawl.yml << 'EOF'
-name: Daily Recruitment Crawler
+# .github/workflows/run_crawler.yml
+
+name: Run Crawler and Update Database
 
 on:
+  push:
+    branches: [ "main" ]
   schedule:
-    - cron: '0 1,7 * * *'
-  workflow_dispatch:
+    # 每天北京时间上午 9:00 和下午 3:00 执行
+    - cron: '0 1 * * *'  
+    - cron: '0 7 * * *'  
 
 jobs:
-  crawl:
+  run-crawler-job:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      # 3. 第一步：检出您的代码仓库到虚拟机
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 4. 第二步：设置 Python 环境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
+      # 5. 第三步：安装项目依赖
+      # 注意：sqlite3 是 Python 内置库，无需安装
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install beautifulsoup4 requests
 
-      - name: Run crawler and save to DB
-        run: |
-          python interface.py
-
-      - name: Commit and push updated database
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add recruitment.db
-          if ! git diff --quiet --exit-code recruitment.db; then
-            git commit -m "chore: update recruitment.db after crawl"
-            git push
-          else
-            echo "No changes, skip commit."
-          fi
-EOF
+      # 6. 第四步：运行您的爬虫脚本
+      - name: Run crawler script
+        run: python interface.py

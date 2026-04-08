@@ -99,7 +99,7 @@ def fetch_notice_list() -> List[Dict[str, str]]:
         List of dicts with keys: 'title', 'url'
     """
     try:
-        resp = requests.get(LIST_PAGE_URL, headers=HEADERS, timeout=10)
+        resp = requests.get(LIST_PAGE_URL, headers=HEADERS, timeout=60)
         resp.raise_for_status()
         resp.encoding = 'utf-8'
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -132,7 +132,7 @@ def fetch_notice_detail(url: str) -> Dict[str, object]:
         Dict with keys: 'source', 'public_time', 'click_through_rate', 'summary'
     """
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
+        resp = requests.get(url, headers=HEADERS, timeout=60)
         resp.raise_for_status()
         resp.encoding = 'utf-8'
         soup = BeautifulSoup(resp.text, "html.parser")
