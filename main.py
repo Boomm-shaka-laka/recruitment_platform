@@ -3,13 +3,21 @@ from fastapi import FastAPI
 import uvicorn
 import logging
 from crawler.bs4_cralwer import fetch_notice_list, fetch_notice_detail
-from db.sqlite_db import RecruitmentDB
+from fastapi.middleware.cors import CORSMiddleware # 导入 CORS 中间件
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境中应明确指定允许的域名，例如 ["https://your-streamlit-app.streamlit.app"]
+    allow_credentials=True,
+    allow_methods=["*"],  # 允许所有 HTTP 方法
+    allow_headers=["*"],  # 允许所有请求头
+)
 
 @app.get("/")
 def read_root():
